@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wavelength Game</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <!-- TailwindCSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'orbitron': ['Orbitron', 'sans-serif'],
+                        'roboto': ['Roboto', 'sans-serif']
+                    },
+                    colors: {
+                        'primary': '#3b82f6',
+                        'secondary': '#38a169'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: "Roboto", sans-serif;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .board {
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .target-area {
+            border-radius: 200px 200px 0 0;
+            position: absolute;
+            overflow: hidden;
+        }
+
+        .needle-container {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+        }
+
+        .needle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform-origin: bottom center;
+            transition: transform 0.2s ease;
+        }
+
+        .bidirectional-arrow {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .bidirectional-arrow::before,
+        .bidirectional-arrow::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 10px;
+            height: 10px;
+            border-top: 3px solid #3b82f6;
+            border-right: 3px solid #3b82f6;
+        }
+
+        .bidirectional-arrow::before {
+            left: 0;
+            transform: translateY(-50%) rotate(-135deg);
+        }
+
+        .bidirectional-arrow::after {
+            right: 0;
+            transform: translateY(-50%) rotate(45deg);
+        }
+
+        .modal {
+            display: none;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal-content {
+            transform: translateY(-50px);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+        }
+
+        .score-5 {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        .score-3 {
+            color: #feca57;
+            font-weight: bold;
+        }
+
+        .score-1 {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .score-0 {
+            color: #a4b0be;
+            font-weight: bold;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            /* display: none; <- Crashes Chrome on hover */
+            -webkit-appearance: none;
+            margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+        }
+    </style>
+</head>
+
+<body class="flex justify-center items-center min-h-screen">
+    <!-- How to Play Modal -->
+    <div id="howToPlayModal" class="modal fixed z-50 left-0 top-0 w-full h-full overflow-auto bg-gray-900 bg-opacity-50">
+        <div class="modal-content bg-white mx-auto my-10 p-8 rounded-xl shadow-xl max-w-2xl w-11/12">
+            <h2 class="text-primary text-2xl md:text-3xl font-bold mb-5 text-center">How to Play Wavelength</h2>
+            <div class="modal-body text-dark text-base md:text-lg leading-relaxed">
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li>A pair of opposing concepts will be displayed.</li>
+                    <li>The Psychic gives a clue where the target is located ON THE SPECTRUM between the two concepts
+                        <ul class="list-disc pl-5 mt-2">
+                            <li>For example between HOT and COLD</li>
+                            <li>The Psychic can say something like COFFEE!</li>
+                        </ul>
+                    </li>
+                    <li>Now it's up to the Psychic's team to discuss the clue and decide where to turn the dial</li>
+                    <li>Click and drag the needle to set your guess.</li>
+                    <li>Click "Hide Target" to lock in your guess.</li>
+                    <li>Click "Reveal Target" to see how close you were.</li>
+                    <li>Scoring:
+                        <ul class="list-disc pl-5 mt-2">
+                            <li><span class="score-5">5 points:</span> Bull's eye (dark blue)</li>
+                            <li><span class="score-3">3 points:</span> Close (yellow)</li>
+                            <li><span class="score-1">1 point:</span> Near (red)</li>
+                            <li><span class="score-0">0 points:</span> Miss</li>
+                        </ul>
+                    </li>
+                    <li>Click "Next Round" to continue or "New Game" to start over.</li>
+                </ol>
+            </div>
+            <button class="close-button w-full py-3 bg-primary text-white rounded-lg text-lg mt-5 hover:bg-blue-700 transition-colors">Got it!</button>
+        </div>
+    </div>
+
+    <!-- Team Setup -->
+    <div id="teamSetup" class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full mx-4 text-center">
+        <h1 class="title font-orbitron text-5xl md:text-6xl font-bold text-primary mb-4">Wavelength</h1>
+        <h2 class="text-2xl font-bold text-dark mb-6">Configuración</h2>
+        <div class="team-count mb-3">
+            <label for="teamCount" class="block text-lg mb-2">Número de equipos:</label>
+            <input type="number" id="teamCount" min="2" max="5" value="2" class="border rounded p-2 text-center w-12">
+        </div>
+        <div id="teamNames" class="mb-6">
+        </div>
+        <div class="controls flex justify-center gap-3 mt-6 flex-wrap">
+            <button id="startGame" class="bg-primary text-white px-4 py-2 rounded-lg text-lg hover:bg-blue-700 transition-colors">Nuevo juego</button>
+            <button id="howToPlayButton" class="how-to-play bg-secondary text-white px-4 py-2 rounded-lg text-lg hover:bg-green-700 transition-colors">Cómo jugar</button>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div class="game-container bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl mx-4 text-center hidden">
+        <h1 class="title font-orbitron text-4xl md:text-5xl font-bold text-primary mb-5">Wavelength</h1>
+        
+        <!-- Game Board -->
+        <div class="board w-80 h-40 md:w-96 md:h-48 mx-auto rounded-t-full">
+            <div class="target-area w-80 h-40 md:w-96 md:h-48 rounded-t-full" id="targetArea"></div>
+            <div class="needle-container w-10 h-36" id="needleContainer">
+                <div class="needle w-1 h-40 bg-red-500 -translate-x-1/2 hidden" id="needle"></div>
+            </div>
+        </div>
+        
+        <!-- Clues -->
+        <div class="clues-container flex items-center justify-center mt-4 h-10">
+            <div class="clue text-lg font-medium text-dark px-3 flex-1 text-center" id="leftClue"></div>
+            <div class="bidirectional-arrow w-40 h-0.5 bg-primary mx-4"></div>
+            <div class="clue text-lg font-medium text-dark px-3 flex-1 text-center" id="rightClue"></div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls flex justify-center gap-3 mt-6 flex-wrap">
+            <button id="toggleButton" class="bg-primary text-white px-5 py-2 rounded-lg text-lg hover:bg-blue-700 transition-colors">Ocultar</button>
+            <button id="nextRoundButton" class="bg-secondary text-white px-5 py-2 rounded-lg text-lg hover:bg-green-700 transition-colors">Siguiente</button>
+            <button id="newGameButton" class="hidden bg-red-500 text-white px-5 py-2 rounded-lg text-lg hover:bg-red-700 transition-colors">Resetear juego</button>
+        </div>
+        
+        <!-- Score Display -->
+        <div id="totalScore" class="mt-5 flex items-center justify-evenly text-lg">
+            <div></div>
+            <div class="current-team font-bold text-secondary"></div>
+        </div>
+        <div id="score" class="hidden mt-3 text-lg font-bold text-dark"></div>
+    </div>
+    
+    <script>
+        // Game elements
+        const needleContainer = document.getElementById("needleContainer");
+        const needle = document.getElementById("needle");
+        const targetArea = document.getElementById("targetArea");
+        const toggleButton = document.getElementById("toggleButton");
+        const nextRoundButton = document.getElementById("nextRoundButton");
+        const newGameButton = document.getElementById("newGameButton");
+        const scoreElement = document.getElementById("score");
+        const totalScoreElement = document.getElementById("totalScore");
+
+        // Team setup elements
+        const teamSetup = document.getElementById('teamSetup');
+        const teamCount = document.getElementById('teamCount');
+        const teamNames = document.getElementById('teamNames');
+        const startGameButton = document.getElementById('startGame');
+        const gameContainer = document.querySelector('.game-container');
+        const howToPlayButton = document.getElementById("howToPlayButton");
+        const modal = document.getElementById("howToPlayModal");
+        const closeButton = modal.querySelector(".close-button");
+
+        // Game state
+        let isDragging = false;
+        let targetAngle = 0;
+        let isTargetVisible = true;
+        let totalScore = 0;
+        let canMoveNeedle = false;
+        let teams = [];
+        let currentTeamIndex = 0;
+
+        // Clues data
+        const clues = [
+            ["Mala compañía", "Buena compañía"],
+            ["Película terrible", "Película excelente"],
+            ["Persona olvidable", "Persona memorable"],
+            ["Culturalmente insignificante", "Culturalmente significativa"],
+            ["Comida seca", "Comida húmeda"],
+            ["Fácil de hacer", "Difícil de hacer"],
+            ["Se siente mal", "Se siente bien"],
+            ["Sin pelo", "Peludo"],
+            ["Difícil de recordar", "Fácil de recordar"],
+            ["Frío", "Caliente"],
+            ["Inflexible", "Flexible"],
+            ["Comida limpia", "Comida desordenada"],
+            ["Comida con utensilios", "Comida con las manos"],
+            ["Querer", "Necesitar"],
+            ["Objeto extraño de poseer", "Objeto normal de poseer"],
+            ["Mal hecho", "Bien hecho"],
+            ["Lugar tranquilo", "Lugar ruidoso"],
+            ["Común", "Raro"],
+            ["Influencia negativa", "Modelo a seguir"],
+            ["Animal puntiagudo", "Animal redondeado"],
+            ["Duro", "Blando"],
+            ["Feo", "Hermoso"],
+            ["Trabajo mal pagado", "Trabajo bien pagado"],
+            ["Habilidad subestimada", "Habilidad sobrevalorada"],
+            ["Emoji poco sexy", "Emoji sexy"],
+            ["Inútil", "Útil"],
+            ["Villano", "Héroe"],
+            ["Peor día", "Mejor día"],
+            ["Pasatiempo aburrido", "Pasatiempo emocionante"],
+            ["Súperpoder inútil", "Súperpoder increíble"],
+            ["Truco de fiesta malo", "Truco de fiesta genial"],
+            ["Primer cita terrible", "Primer cita perfecta"],
+            ["Tema de conversación incómodo", "Tema de conversación interesante"],
+            ["Topping de pizza horrible", "Topping de pizza delicioso"],
+            ["Sonido molesto", "Sonido satisfactorio"],
+            ["Ropa incómoda", "Ropa cómoda"],
+            ["Olor horrible", "Olor agradable"],
+            ["Clase aburrida", "Clase fascinante"],
+            ["Regalo terrible", "Regalo considerado"],
+            ["Hábito poco saludable", "Hábito saludable"],
+            ["Quehacer aburrido", "Quehacer satisfactorio"],
+            ["Canción olvidable", "Canción pegadiza"],
+            ["Aplicación inútil", "Aplicación imprescindible"],
+            ["Nombre de supervillano terrible", "Nombre de superhéroe increíble"],
+            ["Sabor horrible", "Sabor delicioso"],
+            ["Exposición aburrida", "Exposición asombrosa"],
+            ["Nombre de banda terrible", "Nombre de banda genial"],
+            ["Cita memorable de anuario mala", "Cita memorable de anuario genial"],
+            ["Excusa mala", "Excusa creíble"],
+            ["Mascota terrible", "Mascota adorable"],
+            ["Invento malo", "Invento revolucionario"],
+            ["Comercial molesto", "Comercial memorable"],
+            ["Línea de recogida terrible", "Línea de recogida efectiva"],
+            ["Relleno de sándwich horrible", "Relleno de sándwich delicioso"],
+            ["Protector de pantalla aburrido", "Protector de pantalla hipnótico"],
+            ["Hack de vida inútil", "Hack de vida genial"],
+            ["Premisa de sitcom terrible", "Premisa de sitcom hilarante"],
+            ["Canción de karaoke horrible", "Canción de karaoke divertida"],
+            ["Tatuaje terrible", "Tatuaje significativo"],
+            ["Pegatina de coche horrible", "Pegatina de coche ingeniosa"],
+            ["Frase molesta", "Frase icónica"],
+            ["Nombre de equipo terrible", "Nombre de equipo intimidante"],
+            ["Comb. de sabores horrible", "Comb. de sabores deliciosa"],
+            ["Curso universitario inútil", "Curso universitario transformador"],
+            ["Tema de podcast terrible", "Tema de podcast emocionante"],
+            ["Atracción de parque terrible", "Atracción de parque emocionante"],
+            ["Truco de mascota molesto", "Truco de mascota impresionante"],
+            ["Ejercicio terrible", "Ejercicio efectivo"],
+            ["Juego de mesa horrible", "Juego de mesa adictivo"],
+            ["Hábito molesto", "Hábito encantador"],
+            ["Broma terrible", "Broma inofensiva"],
+            ["Mascota de cereal horrible", "Mascota de cereal adorable"],
+            ["Alarma molesta", "Alarma agradable"],
+            ["Vacaciones horribles", "Vacaciones de ensueño"],
+            ["Juguete horrible", "Juguete imprescindible"],
+            ["Personaje de TV molesto", "Personaje de TV favorito"],
+            ["Súperpoder con efecto secundario terrible", "Súperpoder genial"],
+            ["Sabor de helado horrible", "Sabor de helado innovador"],
+            ["Abreviación molesta", "Abreviación útil"],
+            ["Idea de disfraz terrible", "Idea de disfraz creativa"],
+            ["Error de cocina terrible", "Consejo de cocina genial"],
+            ["Ejercicio molesto", "Ejercicio divertido"],
+            ["Método de ruptura terrible", "Método de ruptura respetuoso"],
+            ["Póster motivacional terrible", "Póster motivacional real"],
+            ["Función de coche molesta", "Función de coche útil"],
+            ["Escondite terrible", "Escondite ingenioso"],
+            ["Tendencia terrible de tus padres", "Tendencia retro genial"],
+            ["Comportamiento de turista molesto", "Comportamiento de turista respetuoso"],
+            ["Hábito de compañero horrible", "Hábito ideal"],
+            ["Motivo terrible para faltar al trabajo", "Motivo válido para faltar al trabajo"],
+            ["Notificación de teléfono molesta", "Notificación importante"],
+            ["Nombre de barco terrible", "Nombre de barco ingenioso"],
+            ["Razón terrible para romper con alguien", "Razón válida para romper con alguien"],
+            ["Comportamiento de gimnasio molesto", "Etiqueta correcta en gimnasio"],
+            ["Aerolínea terrible", "Aerolínea de primera"],
+            ["Grafiti de baño horrible", "Grafiti de baño profundo"],
+            ["Casa de Hogwarts terrible", "Mejor casa de Hogwarts"],
+            ["Razón horrible para tener una mascota", "Razón excelente para tener una mascota"],
+            ["Asunto de correo molesto", "Asunto de correo llamativo"],
+            ["Nombre de red WiFi terrible", "Nombre de red WiFi ingenioso"],
+            ["Meme aburrido", "Meme hilarante"],
+            ["Serie de TV mala", "Serie de TV increíble"],
+            ["Snack horrible", "Snack delicioso"],
+            ["Actividad aburrida", "Actividad emocionante"],
+            ["Superpoder inútil", "Superpoder útil"],
+            ["Comida muy picante", "Comida suave"],
+            ["Tecnología obsoleta", "Tecnología moderna"]
+        ];
+
+        // Team setup functions
+        teamCount.addEventListener('change', updateTeamInputs);
+
+        function updateTeamInputs() {
+            const count = parseInt(teamCount.value);
+            teamNames.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const label = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `Jugador ${i + 1}`;
+                input.className = 'team-name-input border rounded p-2 mx-auto mb-3 block';
+                label.appendChild(input);
+                teamNames.appendChild(label);
+            }
+        }
+
+        function updateScoreDisplay() {
+            totalScoreElement.innerHTML = teams.map((team, index) =>
+                `<div class="${index === currentTeamIndex ? 'current-team font-bold text-secondary' : ''}">
+                    ${team.name}: ${team.score}
+                </div>`
+            ).join('');
+        }
+
+        startGameButton.addEventListener('click', () => {
+            teams = Array.from(teamNames.children).map(input => ({
+                name: input.firstChild["value"] || input.firstChild["placeholder"],
+                score: 0
+            }));
+            teamSetup.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            updateScoreDisplay();
+        });
+
+        // Initialize with 2 teams
+        updateTeamInputs();
+
+        // Game functions
+        function setTargetArea() {
+            targetAngle = Math.random() * 180 - 90;
+            targetArea.style.background = `conic-gradient(
+                from -90deg at 50% 100%,
+                #a4b0be 0deg ${targetAngle - 22.5 + 90}deg,
+                #ff6b6b ${targetAngle - 22.5 + 90}deg ${targetAngle - 13.5 + 90}deg,
+                #feca57 ${targetAngle - 13.5 + 90}deg ${targetAngle - 4.5 + 90}deg,
+                #48dbfb ${targetAngle - 4.5 + 90}deg ${targetAngle + 4.5 + 90}deg,
+                #feca57 ${targetAngle + 4.5 + 90}deg ${targetAngle + 13.5 + 90}deg,
+                #ff6b6b ${targetAngle + 13.5 + 90}deg ${targetAngle + 22.5 + 90}deg,
+                #a4b0be ${targetAngle + 22.5 + 90}deg 180deg
+            )`;
+        }
+
+        function setRandomClues() {
+            const randomIndex = Math.floor(Math.random() * clues.length);
+            const [left, right] = clues[randomIndex];
+            console.log(left);
+            document.getElementById("leftClue").textContent = left;
+            document.getElementById("rightClue").textContent = right;
+        }
+
+        function calculateScore(angle) {
+            const diff = Math.abs(angle - targetAngle);
+            if (diff <= 4.5) {
+                triggerConfetti();
+                return 5;
+            }
+            if (diff <= 13.5) return 3;
+            if (diff <= 22.5) return 1;
+            return 0;
+        }
+
+        function handleStart(e) {
+            if (!canMoveNeedle) return;
+            isDragging = true;
+            e.preventDefault();
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 150,
+                spread: 90,
+                origin: { y: 0.6 },
+                colors: ['#ff0000', '#00ff00', '#0000ff'],
+                ticks: 200,
+                shapes: ['square'],
+                gravity: 0.8,
+                scalar: 1.2
+            });
+        }
+
+        function handleMove(e) {
+            if (!isDragging || !canMoveNeedle) return;
+            e.preventDefault();
+            const rect = needleContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.bottom;
+
+            let clientX, clientY;
+            if (e.type === "touchmove") {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const angle = (Math.atan2(clientX - centerX, centerY - clientY) * 180) / Math.PI;
+            const clampedAngle = Math.max(-90, Math.min(90, angle));
+            needle.style.transform = `rotate(${clampedAngle}deg)`;
+        }
+
+        function handleEnd() {
+            isDragging = false;
+        }
+
+        function hideNeedle() {
+            needle.classList.add('hidden');
+        }
+
+        function showNeedle() {
+            needle.classList.remove('hidden');
+        }
+
+        // Modal functionality
+        howToPlayButton.onclick = function() {
+            modal.style.display = "block";
+            setTimeout(() => modal.classList.add("show"), 10);
+        }
+
+        closeButton.onclick = function() {
+            modal.classList.remove("show");
+            setTimeout(() => modal.style.display = "none", 300);
+        }
+
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.classList.remove("show");
+                setTimeout(() => modal.style.display = "none", 300);
+            }
+        }
+
+        // Event listeners
+        needleContainer.addEventListener("mousedown", handleStart);
+        document.addEventListener("mousemove", handleMove);
+        document.addEventListener("mouseup", handleEnd);
+
+        needleContainer.addEventListener("touchstart", handleStart);
+        document.addEventListener("touchmove", handleMove);
+        document.addEventListener("touchend", handleEnd);
+
+        toggleButton.addEventListener("click", () => {
+            isTargetVisible = !isTargetVisible;
+            targetArea.style.display = isTargetVisible ? "block" : "none";
+            if (isTargetVisible) {
+                let score, needleAngle;
+                toggleButton.classList.add('hidden');
+                // nextRoundButton.classList.remove('hidden');
+                needleAngle = parseFloat(needle.style.transform.replace("rotate(", "").replace("deg)", "")) || 0;
+                score = calculateScore(needleAngle);
+                totalScore += score;
+                scoreElement.textContent = `Resultados: ${score} puntos`;
+                // scoreElement.classList.remove("hidden")
+                totalScoreElement.textContent = `Puntos: ${totalScore}`;
+                canMoveNeedle = false;
+
+                needleAngle = parseFloat(needle.style.transform.replace("rotate(", "").replace("deg)", "")) || 0;
+                score = calculateScore(needleAngle);
+                teams[currentTeamIndex].score += score;
+                scoreElement.textContent = `${teams[currentTeamIndex].name} ha obtenido ${score} puntos`;
+                updateScoreDisplay();
+                if (score === 5) {
+                    triggerConfetti();
+                }
+            } else {
+                toggleButton.textContent = "Confirmar";
+                // scoreElement.classList.add("hidden");
+                scoreElement.textContent = "";
+                showNeedle();
+                canMoveNeedle = true;
+            }
+        });
+
+        nextRoundButton.addEventListener("click", () => {
+            setTargetArea();
+            setRandomClues();
+            isTargetVisible = true;
+            targetArea.style.display = "block";
+            toggleButton.textContent = "Ocultar";
+            toggleButton.classList.remove('hidden');
+            // nextRoundButton.classList.add('hidden');
+            needle.style.transform = "rotate(0deg)";
+            scoreElement.textContent = "";
+            hideNeedle();
+            canMoveNeedle = false;
+            currentTeamIndex = (currentTeamIndex + 1) % teams.length;
+            updateScoreDisplay();
+        });
+
+        newGameButton.addEventListener("click", () => {
+            teams.forEach(team => team.score = 0);
+            currentTeamIndex = 0;
+            totalScore = 0;
+            setTargetArea();
+            setRandomClues();
+            isTargetVisible = true;
+            targetArea.style.display = "block";
+            toggleButton.textContent = "Ocultar";
+            toggleButton.classList.remove('hidden');
+            needle.style.transform = "rotate(0deg)";
+            scoreElement.textContent = "";
+            totalScoreElement.textContent = "Total Score: 0";
+            hideNeedle();
+            updateScoreDisplay();
+        });
+
+        // Initialize the game
+        setTargetArea();
+        setRandomClues();
+        hideNeedle();
+    </script>
+</body>
+</html>
