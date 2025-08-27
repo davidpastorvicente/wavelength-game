@@ -113,23 +113,32 @@
             transition: all 0.3s ease-out;
         }
 
+        #score {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            padding: .5rem 1rem;
+            transform: translateX(-50%);
+            background-color: white;
+        }
+
         .score-5 {
-            color: #3b82f6;
+            color: #adc8da;
             font-weight: bold;
         }
 
         .score-3 {
-            color: #feca57;
+            color: #ee7648;
             font-weight: bold;
         }
 
         .score-1 {
-            color: #ff6b6b;
+            color: #fec942;
             font-weight: bold;
         }
 
         .score-0 {
-            color: #a4b0be;
+            color: #eeefe8;
             font-weight: bold;
         }
 
@@ -192,9 +201,9 @@
     </div>
 
     <!-- Game Container -->
-    <div class="game-container bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl m-4 text-center hidden">
+    <div id="gameContainer" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl m-4 text-center hidden">
         <h1 class="title font-orbitron text-4xl md:text-5xl font-bold text-primary mb-5">Wavelength</h1>
-        
+
         <!-- Game Board -->
         <div class="board mx-auto rounded-t-full">
             <div class="target-area w-full h-full" id="targetArea"></div>
@@ -202,29 +211,29 @@
                 <div class="needle w-1 h-5/6 bg-red-500 -translate-x-1/2 hidden" id="needle"></div>
             </div>
         </div>
-        
+
         <!-- Clues -->
         <div class="clues-container flex items-center justify-center mt-4">
             <div class="clue md:text-lg font-medium text-dark px-3 flex-1 text-center" id="leftClue"></div>
             <div class="bidirectional-arrow w-16 md:w-40 h-0.5 bg-primary mx-4"></div>
             <div class="clue md:text-lg font-medium text-dark px-3 flex-1 text-center" id="rightClue"></div>
         </div>
-        
+
         <!-- Controls -->
         <div class="controls flex justify-center gap-3 mt-6 flex-wrap">
             <button id="toggle" class="button bg-primary hover:bg-blue-700"></button>
             <button id="nextRound" class="button bg-gray-400 hover:bg-gray-600"></button>
             <button id="newGame" class="hidden button bg-red-500 hover:bg-red-700">Resetear</button>
         </div>
-        
+
         <!-- Score Display -->
         <div id="totalScore" class="mt-5 flex items-center justify-evenly flex-col sm:flex-row text-lg">
             <div></div>
             <div class="current-player font-bold text-secondary"></div>
         </div>
-        <div id="score" class="hidden mt-3 text-lg font-bold text-dark"></div>
+        <div id="score" class="hidden rounded shadow mt-3">Hola</div>
     </div>
-    
+
     <script>
         // Game elements
         const needleContainer = document.getElementById("needleContainer");
@@ -241,19 +250,19 @@
         const playerCount = document.getElementById('playerCount');
         const playerNames = document.getElementById('playerNames');
         const initGameButton = document.getElementById('initGame');
-        const gameContainer = document.querySelector('.game-container');
         const howToPlayButton = document.getElementById("howToPlay");
         const howToPlayModal = document.getElementById("howToPlayModal");
         const closeButton = document.getElementById("close");
+        const gameContainer = document.getElementById('gameContainer');
 
         // Game state
-        let isDragging = false;
-        let targetAngle = 0;
-        let isTargetVisible = true;
-        let totalScore = 0;
-        let canMoveNeedle = false;
         let players = [];
+        let targetAngle = 0;
         let currentPlayerIndex = 0;
+        let isDragging = false;
+        let isTargetVisible = true;
+        let canMoveNeedle = false;
+
 
         // Clues data
         const clues = [
@@ -410,13 +419,13 @@
             targetAngle = Math.random() * 180 - 90;
             targetArea.style.background = `conic-gradient(
                 from -90deg at 50% 100%,
-                #a4b0be 0deg ${targetAngle - 22.5 + 90}deg,
-                #ff6b6b ${targetAngle - 22.5 + 90}deg ${targetAngle - 13.5 + 90}deg,
-                #feca57 ${targetAngle - 13.5 + 90}deg ${targetAngle - 4.5 + 90}deg,
-                #48dbfb ${targetAngle - 4.5 + 90}deg ${targetAngle + 4.5 + 90}deg,
-                #feca57 ${targetAngle + 4.5 + 90}deg ${targetAngle + 13.5 + 90}deg,
-                #ff6b6b ${targetAngle + 13.5 + 90}deg ${targetAngle + 22.5 + 90}deg,
-                #a4b0be ${targetAngle + 22.5 + 90}deg 180deg
+                #eeefe8 0deg ${targetAngle - 22.5 + 90}deg,
+                #fec942 ${targetAngle - 22.5 + 90}deg ${targetAngle - 13.5 + 90}deg,
+                #ee7648 ${targetAngle - 13.5 + 90}deg ${targetAngle - 4.5 + 90}deg,
+                #adc8da ${targetAngle - 4.5 + 90}deg ${targetAngle + 4.5 + 90}deg,
+                #ee7648 ${targetAngle + 4.5 + 90}deg ${targetAngle + 13.5 + 90}deg,
+                #fec942 ${targetAngle + 13.5 + 90}deg ${targetAngle + 22.5 + 90}deg,
+                #eeefe8 ${targetAngle + 22.5 + 90}deg 180deg
             )`;
         }
 
@@ -531,15 +540,12 @@
 
                 needleAngle = parseFloat(needle.style.transform.replace("rotate(", "").replace("deg)", "")) || 0;
                 score = calculateScore(needleAngle);
-                totalScore += score;
-                scoreElement.textContent = `Resultados: ${score} puntos`;
-                // scoreElement.classList.remove("hidden");
-                canMoveNeedle = false;
-
-                needleAngle = parseFloat(needle.style.transform.replace("rotate(", "").replace("deg)", "")) || 0;
-                score = calculateScore(needleAngle);
                 players[currentPlayerIndex].score += score;
+
                 scoreElement.textContent = `${players[currentPlayerIndex].name} ha obtenido ${score} puntos`;
+                scoreElement.classList.remove("hidden");
+
+                canMoveNeedle = false;
                 updateScoreDisplay();
                 if (score === 5) {
                     triggerConfetti();
@@ -547,9 +553,6 @@
             } else {
                 toggleButton.textContent = "Confirmar";
                 toggleButton.classList.add('bg-secondary', 'hover:bg-green-700');
-
-                // scoreElement.classList.add("hidden");
-                scoreElement.textContent = "";
 
                 showNeedle();
                 canMoveNeedle = true;
@@ -572,6 +575,9 @@
             needle.style.transform = "rotate(0deg)";
             scoreElement.textContent = "";
 
+            scoreElement.classList.add("hidden");
+            scoreElement.textContent = "";
+
             hideNeedle();
             updateScoreDisplay();
         }
@@ -579,12 +585,13 @@
         function startGame() {
             players.forEach(player => player.score = 0);
             currentPlayerIndex = 0;
-            totalScore = 0;
             newRound();
         }
 
         nextRoundButton.addEventListener("click", () => {
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            if (nextRoundButton.textContent === "Siguiente") {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            }
             newRound();
         });
 
