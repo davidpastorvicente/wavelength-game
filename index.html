@@ -31,7 +31,19 @@
             background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
 
+        .button {
+            color: white;
+            font-size: 1.125rem;
+            line-height: 1.75rem;
+            padding: .5rem 1rem;
+            border-radius: 0.5rem;
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+
         .board {
+            aspect-ratio: 2 / 1;
             position: relative;
             overflow: hidden;
             box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.1);
@@ -71,8 +83,8 @@
             top: 50%;
             width: 10px;
             height: 10px;
-            border-top: 3px solid #3b82f6;
-            border-right: 3px solid #3b82f6;
+            border-top: 2px solid #3b82f6;
+            border-right: 2px solid #3b82f6;
         }
 
         .bidirectional-arrow::before {
@@ -130,12 +142,12 @@
     </style>
 </head>
 
-<body class="flex justify-center items-center min-h-screen">
+<body class="flex justify-center items-center h-screen">
     <!-- How to Play Modal -->
     <div id="howToPlayModal" class="modal fixed z-50 left-0 top-0 w-full h-full overflow-auto bg-gray-900 bg-opacity-50">
-        <div class="modal-content bg-white mx-auto my-10 p-8 rounded-xl shadow-xl max-w-2xl w-11/12">
-            <h2 class="text-primary text-2xl md:text-3xl font-bold mb-5 text-center">How to Play Wavelength</h2>
-            <div class="modal-body text-dark text-base md:text-lg leading-relaxed">
+        <div class="modal-content bg-white mx-auto my-10 p-8 rounded-xl shadow-xl max-w-2xl w-11/12 text-center">
+            <h2 class="text-secondary text-2xl md:text-3xl font-bold mb-5 text-center">Instrucciones</h2>
+            <div class="modal-body text-dark text-base md:text-lg leading-relaxed mb-5 text-left">
                 <ol class="list-decimal pl-5 space-y-3">
                     <li>A pair of opposing concepts will be displayed.</li>
                     <li>The Psychic gives a clue where the target is located ON THE SPECTRUM between the two concepts
@@ -159,12 +171,12 @@
                     <li>Click "Next Round" to continue or "New Game" to start over.</li>
                 </ol>
             </div>
-            <button class="close-button w-full py-3 bg-primary text-white rounded-lg text-lg mt-5 hover:bg-blue-700 transition-colors">Got it!</button>
+            <button id="close" class="button bg-primary hover:bg-blue-700">Got it!</button>
         </div>
     </div>
 
     <!-- Team Setup -->
-    <div id="teamSetup" class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full mx-4 text-center">
+    <div id="teamSetup" class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full m-4 text-center">
         <h1 class="title font-orbitron text-5xl md:text-6xl font-bold text-primary mb-4">Wavelength</h1>
         <h2 class="text-2xl font-bold text-dark mb-6">Configuración</h2>
         <div class="team-count mb-3">
@@ -174,39 +186,39 @@
         <div id="teamNames" class="mb-6">
         </div>
         <div class="controls flex justify-center gap-3 mt-6 flex-wrap">
-            <button id="startGame" class="bg-primary text-white px-4 py-2 rounded-lg text-lg hover:bg-blue-700 transition-colors">Nuevo juego</button>
-            <button id="howToPlayButton" class="how-to-play bg-secondary text-white px-4 py-2 rounded-lg text-lg hover:bg-green-700 transition-colors">Cómo jugar</button>
+            <button id="initGame" class="button bg-primary hover:bg-blue-700">Nuevo juego</button>
+            <button id="howToPlay" class="button bg-secondary hover:bg-green-700">Cómo jugar</button>
         </div>
     </div>
 
     <!-- Game Container -->
-    <div class="game-container bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl mx-4 text-center hidden">
+    <div class="game-container bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl m-4 text-center hidden">
         <h1 class="title font-orbitron text-4xl md:text-5xl font-bold text-primary mb-5">Wavelength</h1>
         
         <!-- Game Board -->
-        <div class="board w-80 h-40 md:w-96 md:h-48 mx-auto rounded-t-full">
-            <div class="target-area w-80 h-40 md:w-96 md:h-48 rounded-t-full" id="targetArea"></div>
-            <div class="needle-container w-10 h-36" id="needleContainer">
-                <div class="needle w-1 h-40 bg-red-500 -translate-x-1/2 hidden" id="needle"></div>
+        <div class="board mx-auto rounded-t-full">
+            <div class="target-area w-full h-full" id="targetArea"></div>
+            <div class="needle-container w-full h-full" id="needleContainer">
+                <div class="needle w-1 h-5/6 bg-red-500 -translate-x-1/2 hidden" id="needle"></div>
             </div>
         </div>
         
         <!-- Clues -->
-        <div class="clues-container flex items-center justify-center mt-4 h-10">
-            <div class="clue text-lg font-medium text-dark px-3 flex-1 text-center" id="leftClue"></div>
-            <div class="bidirectional-arrow w-40 h-0.5 bg-primary mx-4"></div>
-            <div class="clue text-lg font-medium text-dark px-3 flex-1 text-center" id="rightClue"></div>
+        <div class="clues-container flex items-center justify-center mt-4">
+            <div class="clue md:text-lg font-medium text-dark px-3 flex-1 text-center" id="leftClue"></div>
+            <div class="bidirectional-arrow w-16 md:w-40 h-0.5 bg-primary mx-4"></div>
+            <div class="clue md:text-lg font-medium text-dark px-3 flex-1 text-center" id="rightClue"></div>
         </div>
         
         <!-- Controls -->
         <div class="controls flex justify-center gap-3 mt-6 flex-wrap">
-            <button id="toggleButton" class="bg-primary text-white px-5 py-2 rounded-lg text-lg hover:bg-blue-700 transition-colors">Ocultar</button>
-            <button id="nextRoundButton" class="bg-secondary text-white px-5 py-2 rounded-lg text-lg hover:bg-green-700 transition-colors">Siguiente</button>
-            <button id="newGameButton" class="hidden bg-red-500 text-white px-5 py-2 rounded-lg text-lg hover:bg-red-700 transition-colors">Resetear juego</button>
+            <button id="toggle" class="button bg-primary hover:bg-blue-700"></button>
+            <button id="nextRound" class="button bg-gray-400 hover:bg-gray-600"></button>
+            <button id="newGame" class="hidden button bg-red-500 hover:bg-red-700">Resetear</button>
         </div>
         
         <!-- Score Display -->
-        <div id="totalScore" class="mt-5 flex items-center justify-evenly text-lg">
+        <div id="totalScore" class="mt-5 flex items-center justify-evenly flex-col sm:flex-row text-lg">
             <div></div>
             <div class="current-team font-bold text-secondary"></div>
         </div>
@@ -218,9 +230,9 @@
         const needleContainer = document.getElementById("needleContainer");
         const needle = document.getElementById("needle");
         const targetArea = document.getElementById("targetArea");
-        const toggleButton = document.getElementById("toggleButton");
-        const nextRoundButton = document.getElementById("nextRoundButton");
-        const newGameButton = document.getElementById("newGameButton");
+        const toggleButton = document.getElementById("toggle");
+        const nextRoundButton = document.getElementById("nextRound");
+        const newGameButton = document.getElementById("newGame");
         const scoreElement = document.getElementById("score");
         const totalScoreElement = document.getElementById("totalScore");
 
@@ -228,11 +240,11 @@
         const teamSetup = document.getElementById('teamSetup');
         const teamCount = document.getElementById('teamCount');
         const teamNames = document.getElementById('teamNames');
-        const startGameButton = document.getElementById('startGame');
+        const initGameButton = document.getElementById('initGame');
         const gameContainer = document.querySelector('.game-container');
-        const howToPlayButton = document.getElementById("howToPlayButton");
-        const modal = document.getElementById("howToPlayModal");
-        const closeButton = modal.querySelector(".close-button");
+        const howToPlayButton = document.getElementById("howToPlay");
+        const howToPlayModal = document.getElementById("howToPlayModal");
+        const closeButton = document.getElementById("close");
 
         // Game state
         let isDragging = false;
@@ -379,7 +391,7 @@
             ).join('');
         }
 
-        startGameButton.addEventListener('click', () => {
+        initGameButton.addEventListener('click', () => {
             teams = Array.from(teamNames.children).map(input => ({
                 name: input.firstChild["value"] || input.firstChild["placeholder"],
                 score: 0
@@ -387,6 +399,7 @@
             teamSetup.classList.add('hidden');
             gameContainer.classList.remove('hidden');
             updateScoreDisplay();
+            startGame();
         });
 
         // Initialize with 2 teams
@@ -480,19 +493,19 @@
 
         // Modal functionality
         howToPlayButton.onclick = function() {
-            modal.style.display = "block";
-            setTimeout(() => modal.classList.add("show"), 10);
+            howToPlayModal.style.display = "block";
+            setTimeout(() => howToPlayModal.classList.add("show"), 10);
         }
 
         closeButton.onclick = function() {
-            modal.classList.remove("show");
-            setTimeout(() => modal.style.display = "none", 300);
+            howToPlayModal.classList.remove("show");
+            setTimeout(() => howToPlayModal.style.display = "none", 300);
         }
 
         window.onclick = function(event) {
-            if (event.target === modal) {
-                modal.classList.remove("show");
-                setTimeout(() => modal.style.display = "none", 300);
+            if (event.target === howToPlayModal) {
+                howToPlayModal.classList.remove("show");
+                setTimeout(() => howToPlayModal.style.display = "none", 300);
             }
         }
 
@@ -511,13 +524,16 @@
             if (isTargetVisible) {
                 let score, needleAngle;
                 toggleButton.classList.add('hidden');
+
+                nextRoundButton.textContent = "Siguiente";
+                nextRoundButton.classList.add('bg-secondary', 'hover:bg-green-700');
                 // nextRoundButton.classList.remove('hidden');
+
                 needleAngle = parseFloat(needle.style.transform.replace("rotate(", "").replace("deg)", "")) || 0;
                 score = calculateScore(needleAngle);
                 totalScore += score;
                 scoreElement.textContent = `Resultados: ${score} puntos`;
-                // scoreElement.classList.remove("hidden")
-                totalScoreElement.textContent = `Puntos: ${totalScore}`;
+                // scoreElement.classList.remove("hidden");
                 canMoveNeedle = false;
 
                 needleAngle = parseFloat(needle.style.transform.replace("rotate(", "").replace("deg)", "")) || 0;
@@ -530,45 +546,49 @@
                 }
             } else {
                 toggleButton.textContent = "Confirmar";
+                toggleButton.classList.add('bg-secondary', 'hover:bg-green-700');
+
                 // scoreElement.classList.add("hidden");
                 scoreElement.textContent = "";
+
                 showNeedle();
                 canMoveNeedle = true;
             }
         });
 
-        nextRoundButton.addEventListener("click", () => {
+        function newRound() {
             setTargetArea();
             setRandomClues();
             isTargetVisible = true;
             targetArea.style.display = "block";
+
             toggleButton.textContent = "Ocultar";
-            toggleButton.classList.remove('hidden');
+            toggleButton.classList.remove('hidden', 'bg-secondary', 'hover:bg-green-700');
+
+            nextRoundButton.textContent = "Omitir";
+            nextRoundButton.classList.remove('bg-secondary', 'hover:bg-green-700');
             // nextRoundButton.classList.add('hidden');
+
             needle.style.transform = "rotate(0deg)";
             scoreElement.textContent = "";
-            hideNeedle();
-            canMoveNeedle = false;
-            currentTeamIndex = (currentTeamIndex + 1) % teams.length;
-            updateScoreDisplay();
-        });
 
-        newGameButton.addEventListener("click", () => {
+            hideNeedle();
+            updateScoreDisplay();
+        }
+
+        function startGame() {
             teams.forEach(team => team.score = 0);
             currentTeamIndex = 0;
             totalScore = 0;
-            setTargetArea();
-            setRandomClues();
-            isTargetVisible = true;
-            targetArea.style.display = "block";
-            toggleButton.textContent = "Ocultar";
-            toggleButton.classList.remove('hidden');
-            needle.style.transform = "rotate(0deg)";
-            scoreElement.textContent = "";
-            totalScoreElement.textContent = "Total Score: 0";
-            hideNeedle();
-            updateScoreDisplay();
+            newRound();
+        }
+
+        nextRoundButton.addEventListener("click", () => {
+            currentTeamIndex = (currentTeamIndex + 1) % teams.length;
+            newRound();
         });
+
+        newGameButton.addEventListener("click", startGame);
 
         // Initialize the game
         setTargetArea();
