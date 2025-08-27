@@ -156,7 +156,7 @@
                             <li>The Psychic can say something like COFFEE!</li>
                         </ul>
                     </li>
-                    <li>Now it's up to the Psychic's team to discuss the clue and decide where to turn the dial</li>
+                    <li>Now it's up to the Psychic to discuss the clue and decide where to turn the dial</li>
                     <li>Click and drag the needle to set your guess.</li>
                     <li>Click "Hide Target" to lock in your guess.</li>
                     <li>Click "Reveal Target" to see how close you were.</li>
@@ -175,15 +175,15 @@
         </div>
     </div>
 
-    <!-- Team Setup -->
-    <div id="teamSetup" class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full m-4 text-center">
+    <!-- Player Setup -->
+    <div id="playerSetup" class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full m-4 text-center">
         <h1 class="title font-orbitron text-5xl md:text-6xl font-bold text-primary mb-4">Wavelength</h1>
         <h2 class="text-2xl font-bold text-dark mb-6">Configuración</h2>
-        <div class="team-count mb-3">
-            <label for="teamCount" class="block text-lg mb-2">Número de equipos:</label>
-            <input type="number" id="teamCount" min="2" max="5" value="2" class="border rounded p-2 text-center w-12">
+        <div class="player-count mb-3">
+            <label for="playerCount" class="block text-lg mb-2">Número de equipos:</label>
+            <input type="number" id="playerCount" min="2" max="5" value="2" class="border rounded p-2 text-center w-12">
         </div>
-        <div id="teamNames" class="mb-6">
+        <div id="playerNames" class="mb-6">
         </div>
         <div class="controls flex justify-center gap-3 mt-6 flex-wrap">
             <button id="initGame" class="button bg-primary hover:bg-blue-700">Nuevo juego</button>
@@ -220,7 +220,7 @@
         <!-- Score Display -->
         <div id="totalScore" class="mt-5 flex items-center justify-evenly flex-col sm:flex-row text-lg">
             <div></div>
-            <div class="current-team font-bold text-secondary"></div>
+            <div class="current-player font-bold text-secondary"></div>
         </div>
         <div id="score" class="hidden mt-3 text-lg font-bold text-dark"></div>
     </div>
@@ -236,10 +236,10 @@
         const scoreElement = document.getElementById("score");
         const totalScoreElement = document.getElementById("totalScore");
 
-        // Team setup elements
-        const teamSetup = document.getElementById('teamSetup');
-        const teamCount = document.getElementById('teamCount');
-        const teamNames = document.getElementById('teamNames');
+        // Player setup elements
+        const playerSetup = document.getElementById('playerSetup');
+        const playerCount = document.getElementById('playerCount');
+        const playerNames = document.getElementById('playerNames');
         const initGameButton = document.getElementById('initGame');
         const gameContainer = document.querySelector('.game-container');
         const howToPlayButton = document.getElementById("howToPlay");
@@ -252,8 +252,8 @@
         let isTargetVisible = true;
         let totalScore = 0;
         let canMoveNeedle = false;
-        let teams = [];
-        let currentTeamIndex = 0;
+        let players = [];
+        let currentPlayerIndex = 0;
 
         // Clues data
         const clues = [
@@ -366,44 +366,44 @@
             ["Tecnología obsoleta", "Tecnología moderna"]
         ];
 
-        // Team setup functions
-        teamCount.addEventListener('change', updateTeamInputs);
+        // Player setup functions
+        playerCount.addEventListener('change', updatePlayerInputs);
 
-        function updateTeamInputs() {
-            const count = parseInt(teamCount.value);
-            teamNames.innerHTML = '';
+        function updatePlayerInputs() {
+            const count = parseInt(playerCount.value);
+            playerNames.innerHTML = '';
             for (let i = 0; i < count; i++) {
                 const label = document.createElement('label');
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.placeholder = `Jugador ${i + 1}`;
-                input.className = 'team-name-input border rounded p-2 mx-auto mb-3 block';
+                input.className = 'player-name-input border rounded p-2 mx-auto mb-3 block';
                 label.appendChild(input);
-                teamNames.appendChild(label);
+                playerNames.appendChild(label);
             }
         }
 
         function updateScoreDisplay() {
-            totalScoreElement.innerHTML = teams.map((team, index) =>
-                `<div class="${index === currentTeamIndex ? 'current-team font-bold text-secondary' : ''}">
-                    ${team.name}: ${team.score}
+            totalScoreElement.innerHTML = players.map((player, index) =>
+                `<div class="${index === currentPlayerIndex ? 'current-player font-bold text-secondary' : ''}">
+                    ${player.name}: ${player.score}
                 </div>`
             ).join('');
         }
 
         initGameButton.addEventListener('click', () => {
-            teams = Array.from(teamNames.children).map(input => ({
+            players = Array.from(playerNames.children).map(input => ({
                 name: input.firstChild["value"] || input.firstChild["placeholder"],
                 score: 0
             }));
-            teamSetup.classList.add('hidden');
+            playerSetup.classList.add('hidden');
             gameContainer.classList.remove('hidden');
             updateScoreDisplay();
             startGame();
         });
 
-        // Initialize with 2 teams
-        updateTeamInputs();
+        // Initialize with 2 players
+        updatePlayerInputs();
 
         // Game functions
         function setTargetArea() {
@@ -538,8 +538,8 @@
 
                 needleAngle = parseFloat(needle.style.transform.replace("rotate(", "").replace("deg)", "")) || 0;
                 score = calculateScore(needleAngle);
-                teams[currentTeamIndex].score += score;
-                scoreElement.textContent = `${teams[currentTeamIndex].name} ha obtenido ${score} puntos`;
+                players[currentPlayerIndex].score += score;
+                scoreElement.textContent = `${players[currentPlayerIndex].name} ha obtenido ${score} puntos`;
                 updateScoreDisplay();
                 if (score === 5) {
                     triggerConfetti();
@@ -577,14 +577,14 @@
         }
 
         function startGame() {
-            teams.forEach(team => team.score = 0);
-            currentTeamIndex = 0;
+            players.forEach(player => player.score = 0);
+            currentPlayerIndex = 0;
             totalScore = 0;
             newRound();
         }
 
         nextRoundButton.addEventListener("click", () => {
-            currentTeamIndex = (currentTeamIndex + 1) % teams.length;
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
             newRound();
         });
 
